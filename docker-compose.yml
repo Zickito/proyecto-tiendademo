@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # 1. Tu aplicación web (Tienda Demo)
+  tienda-demo:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: tienda_app
+    ports:
+      - "${APP_PORT}:80"
+    networks:
+      - qa-network
+
+  # 2. Nodo de Selenium (Para que tus scripts de Python corran las pruebas)
+  selenium-hub:
+    image: selenium/standalone-chrome:latest
+    container_name: qa_selenium
+    shm_size: 2gb
+    ports:
+      - "${SELENIUM_PORT}:4444"
+      - "${SELENIUM_VNC_PORT}:7900" # Puerto para ver las pruebas en vivo (VNC)
+    networks:
+      - qa-network
+
+  # 3. Contenedor de Playwright (Preparado para la semana 9)
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.39.0-jammy
+    container_name: qa_playwright
+    command: sleep infinity # Mantiene el contenedor vivo para que el pipeline ejecute comandos dentro
+    volumes:
+      - ./:/workspace
+    working_dir: /workspace
+    networks:
+      - qa-network
+
+  # 4. Contenedor de Grafana k6 (Para pruebas de carga y estrés)
+  k6:
+    image: grafana/k6:latest
+    container_name: qa_k6
+    entrypoint: ["tail", "-f", "/dev/null"]
+    volumes:
+      - ./:/workspace
+    working_dir: /workspace
+    networks:
+      - qa-network
+
+networks:
+  qa-network:
+    driver: bridge
